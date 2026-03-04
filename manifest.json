@@ -1,0 +1,15 @@
+{
+  "name": "Bandarban 26",
+  "short_name": "B26",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2db34a",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/826/826070.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
