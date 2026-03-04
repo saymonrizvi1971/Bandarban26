@@ -414,6 +414,14 @@
             <button onclick="closeModal()" style="width:100%; border:none; background:none; color:#000; font-weight:bold;">বাতিল</button>
         </div>
     </div>
-
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker Registered'))
+        .catch(err => console.log('Service Worker Failed', err));
+    });
+  }
+</script>
 </body>
 </html>
