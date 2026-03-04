@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BANDARBAN 26 - ULTIMATE EDITION</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glossy-green: linear-gradient(135deg, rgba(126, 217, 87, 0.8), rgba(45, 179, 74, 0.9));
+            --glossy-red: linear-gradient(135deg, rgba(255, 138, 113, 0.8), rgba(229, 57, 53, 0.9));
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Hind Siliguri', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: url('https://cdn.pixabay.com/photo/2019/02/08/11/44/landscape-3983105_1280.jpg'); 
+            background-size: cover; 
+            background-attachment: fixed; 
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            overflow-x: hidden; 
+        }
+
+        #login-overlay { 
+            position: fixed; 
+            inset: 0; 
+            z-index: 9999; 
+            background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqKPGRi8LgFWE4FZPuSOz17ghCPdde2fK6tSKcB4DzcCz4Z_35z7SIzT0&s=10'); 
+            background-size: cover;
+            background-position: center;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        
+        .login-card { 
+            width: 85%; 
+            max-width: 350px; 
+            padding: 35px 25px; 
+            background: rgba(0, 0, 0, 0.4); 
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border); 
+            border-radius: 30px; 
+            text-align: center; 
+            color: white; 
+        }
+
+        #main-app { display: none; width: 100%; max-width: 414px; position: relative; }
+        .app-container { width: 100%; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); min-height: 100vh; position: relative; padding-bottom: 140px; border: 1px solid var(--glass-border); }
+        .glass-box { background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        .banner-card { width: 92%; height: 180px; margin: 20px auto; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; color: #000; }
+        
+        .btn-large { width: 100%; padding: 16px; border: none; border-radius: 20px; color: white; font-size: 18px; font-weight: 700; margin-bottom: 15px; cursor: pointer; transition: 0.3s; }
+        .btn-disabled { background: #333 !important; color: #777 !important; pointer-events: none; opacity: 0.8; }
+
+        .history-item { background: rgba(255, 255, 255, 0.4); padding: 15px; border-radius: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--glass-border); }
+        .action-icons { display: flex; gap: 12px; align-items: center; }
+        .edit-icon { color: #004d40; cursor: pointer; font-size: 16px; opacity: 0.8; }
+        .del-icon { color: #b71c1c; cursor: pointer; font-size: 16px; opacity: 0.8; }
+
+        .friend-card { background: rgba(255, 255, 255, 0.4); padding: 18px; border-radius: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+
+        .stat-detail-item { display: flex; justify-content: space-between; padding: 12px 18px; background: rgba(255,255,255,0.3); border-radius: 15px; margin-bottom: 8px; border: 1px solid var(--glass-border); }
+
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 90%; 
+            max-width: 380px; 
+            background: rgba(255, 255, 255, 0.15); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            display: flex; 
+            justify-content: space-around; 
+            padding: 12px 0; 
+            border: 1px solid rgba(255, 255, 255, 0.3); 
+            z-index: 5000; 
+            border-radius: 25px; 
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
+        }
+        .nav-item { text-align: center; color: rgba(0, 0, 0, 0.5); font-size: 11px; flex: 1; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
+        .nav-item.active { color: #000; font-weight: 800; transform: translateY(-5px); }
+
+        input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 15px; border: 1px solid rgba(255,255,255,0.3); font-size: 16px; outline: none; background: rgba(255,255,255,0.5); color: #000; }
+        input::placeholder { color: #444; }
+        
+        .modal { display: none; position: fixed; z-index: 6000; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
+        
+        .modal-content { 
+            background: rgba(255, 255, 255, 0.2); 
+            backdrop-filter: blur(25px); 
+            -webkit-backdrop-filter: blur(25px);
+            padding: 30px; 
+            border-radius: 30px; 
+            width: 88%; 
+            max-height: 80vh; 
+            overflow-y: auto; 
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            color: #000;
+        }
+        
+        .tag-container { display: inline-flex; align-items: center; background: rgba(255,255,255,0.4); padding: 8px 12px; margin: 4px; border-radius: 12px; font-size: 13px; cursor: pointer; font-weight: 600; border: 1px solid rgba(255,255,255,0.5); }
+        .del-tag { margin-left: 8px; color: #ff5252; font-weight: 800; font-size: 16px; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); border-radius: 50%; }
+        .hidden { display: none !important; }
+        
+        #deadline-box { cursor: pointer; transition: 0.3s; }
+        #deadline-input { pointer-events: none; opacity: 0.5; background: #f5f5f5; }
+    </style>
+<link rel="manifest" href="manifest.json">
+
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2 style="margin-bottom:20px;">BANDARBAN 26</h2>
+            <input type="text" id="username" placeholder="ইউজারনেম">
+            <input type="password" id="password" placeholder="পাসওয়ার্ড">
+            <button class="btn-large" style="background: var(--glossy-green)" onclick="checkLogin()">প্রবেশ করুন</button>
+            <p id="login-error" style="color: #ff5252; display: none; margin-top:10px;">ভুল তথ্য!</p>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <div id="pdf-content" class="app-container">
+            
+            <div id="home-screen" class="screen">
+                <div class="glass-box banner-card">
+                    <div><h1>Bandarban 26</h1><p style="font-weight:700; opacity:0.7">MANAGEMENT SYSTEM</p></div>
+                    <div><span style="font-weight:600">ব্যালেন্স</span> <br><span style="font-size:28px; font-weight:900;">৳ <span id="main-balance">০</span></span></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 15px; margin-bottom: 20px;">
+                    <div class="glass-box" style="padding:15px; text-align:center;"><small>মোট জমা</small><h3 id="total-deposit" style="color:#004d40">৳ ০</h3></div>
+                    <div class="glass-box" style="padding:15px; text-align:center;"><small>মোট খরচ</small><h3 id="total-expense" style="color:#b71c1c">৳ ০</h3></div>
+                </div>
+                <div style="padding: 0 20px;">
+                    <button id="deposit-btn-main" class="btn-large" style="background: var(--glossy-green)" onclick="openModal('deposit-modal')">💰 টাকা জমা (+)</button>
+                    <button class="btn-large" style="background: var(--glossy-red)" onclick="openModal('expense-modal')">💸 খরচ (-)</button>
+                    <h4 style="margin: 10px 0;">সাম্প্রতিক লেনদেন</h4>
+                    <div id="history-list"></div>
+                </div>
+            </div>
+
+            <div id="stats-screen" class="screen hidden" style="padding:20px;">
+                <h2 align="center">📊 খরচের চার্ট</h2>
+                <div class="glass-box" style="margin:20px 0; padding:20px;"><canvas id="expenseChart"></canvas></div>
+                <h4 style="margin: 20px 0 10px 5px;">খাত অনুযায়ী খরচের বিবরণ:</h4>
+                <div id="expense-stats-details"></div>
+            </div>
+
+            <div id="friends-screen" class="screen hidden" style="padding:20px;">
+                <h2 align="center">👥 সদস্যদের জমা</h2>
+                <div id="friend-deposit-list" style="margin-top:20px;"></div>
+            </div>
+
+            <div id="profile-screen" class="screen hidden">
+                <div class="glass-box banner-card" style="height: 140px; justify-content: center; align-items: center;">
+                    <small>CREATED BY</small><h1 style="font-size: 32px;">MD. RIZVI</h1>
+                </div>
+                <div style="padding: 20px;">
+                    <div class="glass-box" id="deadline-box" style="padding: 20px; margin-bottom: 20px;" 
+                         onmousedown="startDeadlineTimer()" onmouseup="clearDeadlineTimer()" 
+                         ontouchstart="startDeadlineTimer()" ontouchend="clearDeadlineTimer()">
+                        <h4 style="margin-bottom:10px; display: flex; align-items: center; gap: 10px;">
+                            <i id="deadline-icon" class="fas fa-shield-halved" style="color: #b71c1c;"></i> ডেডলাইন
+                        </h4>
+                        <input type="date" id="deadline-input" onchange="updateDeadline()">
+                    </div>
+                    
+                    <button class="btn-large" style="background: #2196F3;" onclick="exportPDF()">📄 রিপোর্ট ডাউনলোড (PDF)</button>
+                    <center><span onclick="logout()" style="color: #b71c1c; font-weight: 700; cursor: pointer; text-decoration: underline;">লগ আউট</span></center>
+                    <div style="text-align: center; margin-top: 40px; opacity: 0.9; font-size: 11px; color:#000">
+                        "এটা আমার প্রথম আ্যপ। নেক্সট ট্যুর এর জন্য আরও আপডেটেড এবং উন্নত অ্যাপ থাকবে।"<br><b>- md. rizvi</b>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" id="nav-home" onclick="navigate('home')"><i class="fas fa-home"></i><br>Home</div>
+            <div class="nav-item" id="nav-stats" onclick="navigate('stats')"><i class="fas fa-chart-pie"></i><br>Stats</div>
+            <div class="nav-item" id="nav-friends" onclick="navigate('friends')"><i class="fas fa-users"></i><br>Friends</div>
+            <div class="nav-item" id="nav-profile" onclick="navigate('profile')"><i class="fas fa-user-circle"></i><br>Profile</div>
+        </nav>
+    </div>
+
+    <script>
+        let myChart = null;
+        let deadlineTimer;
+        const targetAmount = 8000;
+        const defaultFriends = ["আসিম", "আসিফ", "সিয়াম", "আরিফ", "প্রসঙ্গ", "জীবন", "রোহান", "সোহান", "নাসিম", "নয়ন", "রিজভী", "রহিম", "জিতু", "হামিম", "রিয়াদ"];
+
+        let data = JSON.parse(localStorage.getItem('tourDataV34')) || { 
+            balance: 0, friends: [...defaultFriends], categories: ["খাবার", "যাতায়াত", "বাস ভাড়া", "হোটেল"], logs: [], deadline: "" 
+        };
+
+        function checkLogin() {
+            if(document.getElementById('username').value === "bandarban26" && document.getElementById('password').value === "network26") {
+                localStorage.setItem('isLoggedIn_B26', 'true');
+                initApp();
+            } else { document.getElementById('login-error').style.display = 'block'; }
+        }
+        function logout() { localStorage.removeItem('isLoggedIn_B26'); location.reload(); }
+        window.onload = () => { if(localStorage.getItem('isLoggedIn_B26') === 'true') initApp(); };
+        function initApp() { document.getElementById('login-overlay').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; saveAndRefresh(); }
+
+        function startDeadlineTimer() {
+            deadlineTimer = setTimeout(() => {
+                let p = prompt("নিরাপত্তা পাসওয়ার্ড দিন:");
+                if(p === "network26") {
+                    document.getElementById('deadline-input').style.pointerEvents = "auto";
+                    document.getElementById('deadline-input').style.opacity = "1";
+                    document.getElementById('deadline-icon').className = "fas fa-shield-heart";
+                    document.getElementById('deadline-icon').style.color = "#2db34a";
+                    alert("ডেডলাইন আনলক হয়েছে।");
+                } else if(p !== null) { alert("ভুল পাসওয়ার্ড!"); }
+            }, 5000);
+        }
+        function clearDeadlineTimer() { clearTimeout(deadlineTimer); }
+
+        function updateDeadline() { 
+            data.deadline = document.getElementById('deadline-input').value; 
+            document.getElementById('deadline-input').style.pointerEvents = "none";
+            document.getElementById('deadline-input').style.opacity = "0.5";
+            document.getElementById('deadline-icon').className = "fas fa-shield-halved";
+            document.getElementById('deadline-icon').style.color = "#b71c1c";
+            saveAndRefresh(); 
+        }
+
+        function navigate(tab) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(tab + '-screen').classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('nav-' + tab).classList.add('active');
+            window.scrollTo(0,0);
+            if(tab === 'stats') updateStatsUI();
+            if(tab === 'friends') updateFriendsUI();
+        }
+
+        function getFriendColor(amt) {
+            const ratio = Math.min(amt / targetAmount, 1);
+            let r, g, b;
+            if (ratio < 0.5) { r = 255; g = 100 + Math.floor(ratio * 2 * 155); b = 100; } 
+            else { r = 255 - Math.floor((ratio - 0.5) * 2 * 155); g = 255; b = 100; }
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        /* --- আপডেট করা নেগেটিভ ব্যালেন্স প্রটেকশন ফাংশন --- */
+        function saveTransaction(type) {
+            let label = document.getElementById(type + '-label').value.trim();
+            let amt = parseInt(document.getElementById(type + '-amt').value);
+            if(!amt || !label) return;
+
+            // যদি খরচ হয় এবং ব্যালেন্স পর্যাপ্ত না থাকে
+            if (type === 'exp' && amt > data.balance) {
+                alert("আপনার ব্যালেন্স পর্যাপ্ত নয়! (মেইন ব্যালেন্স: ৳" + data.balance + ")");
+                return;
+            }
+
+            data.balance += (type === 'dep' ? amt : -amt);
+            data.logs.push({ type, label, amt, date: new Date().toLocaleDateString('bn-BD') });
+            saveAndRefresh(); closeModal();
+        }
+
+        function deleteLog(idx) { 
+            if(confirm("লেনদেনটি মুছে ফেলতে চান?")) { 
+                let log = data.logs[idx];
+                data.balance += (log.type === 'dep' ? -log.amt : log.amt); 
+                data.logs.splice(idx, 1); 
+                saveAndRefresh(); 
+            } 
+        }
+
+        function openEditModal(idx) {
+            const log = data.logs[idx];
+            document.getElementById('edit-label').value = log.label;
+            document.getElementById('edit-amt').value = log.amt;
+            document.getElementById('edit-modal').style.display = 'flex';
+            document.getElementById('update-btn').onclick = () => {
+                let nL = document.getElementById('edit-label').value;
+                let nA = parseInt(document.getElementById('edit-amt').value);
+                
+                // এডিট করার সময়ও নেগেটিভ ব্যালেন্স চেক
+                let tempBalance = data.balance + (log.type === 'dep' ? -log.amt : log.amt);
+                if (log.type === 'exp' && nA > tempBalance) {
+                    alert("ব্যালেন্স পর্যাপ্ত নয়!"); return;
+                }
+
+                data.balance = tempBalance + (log.type === 'dep' ? nA : -nA);
+                data.logs[idx].label = nL; data.logs[idx].amt = nA;
+                closeModal(); saveAndRefresh();
+            };
+        }
+
+        function removeCategory(cat) {
+            if(confirm(`"${cat}" সাজেশনটি মুছে ফেলতে চান?`)) {
+                data.categories = data.categories.filter(c => c !== cat);
+                saveAndRefresh();
+                openModal('expense-modal');
+            }
+        }
+
+        function openModal(id) {
+            const type = id === 'expense-modal' ? 'exp' : 'dep';
+            const list = type === 'exp' ? data.categories : data.friends;
+            
+            document.getElementById(type + '-tags').innerHTML = list.map(item => {
+                if(type === 'exp') {
+                    return `<span class="tag-container" onclick="document.getElementById('exp-label').value='${item}'">
+                                ${item} <span class="del-tag" onclick="event.stopPropagation(); removeCategory('${item}')">×</span>
+                            </span>`;
+                } else {
+                    return `<span class="tag-container" onclick="document.getElementById('dep-label').value='${item}'">${item}</span>`;
+                }
+            }).join('');
+            
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('tourDataV34', JSON.stringify(data));
+            document.getElementById('main-balance').innerText = data.balance.toLocaleString();
+            document.getElementById('total-deposit').innerText = "৳ " + data.logs.filter(l => l.type === 'dep').reduce((s, l) => s + l.amt, 0).toLocaleString();
+            document.getElementById('total-expense').innerText = "৳ " + data.logs.filter(l => l.type === 'exp').reduce((s, l) => s + l.amt, 0).toLocaleString();
+            document.getElementById('deadline-input').value = data.deadline;
+            
+            document.getElementById('history-list').innerHTML = data.logs.slice().reverse().slice(0, 8).map((l, i) => {
+                let actualIdx = data.logs.length - 1 - i;
+                return `<div class="history-item">
+                    <div><small>${l.date}</small><br><strong>${l.label}</strong></div>
+                    <div class="action-icons">
+                        <strong>৳ ${l.amt}</strong>
+                        <i class="fas fa-edit edit-icon" onclick="openEditModal(${actualIdx})"></i>
+                        <i class="fas fa-trash-alt del-icon" onclick="deleteLog(${actualIdx})"></i>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function updateFriendsUI() {
+            let fMap = {}; data.friends.forEach(f => fMap[f] = 0);
+            data.logs.filter(l => l.type === 'dep').forEach(l => fMap[l.label] = (fMap[l.label]||0) + l.amt);
+            document.getElementById('friend-deposit-list').innerHTML = Object.entries(fMap).map(([n, t]) => {
+                const color = getFriendColor(t);
+                return `<div class="friend-card" style="border: 2px solid ${color}; border-left-width: 12px;">
+                    <div><strong>${n}</strong><br><small>${Math.min((t/targetAmount)*100, 100).toFixed(0)}% সম্পন্ন</small></div>
+                    <div style="text-align:right"><strong>৳ ${t}</strong><br><small style="font-size:10px">টার্গেট: ৮০০০</small></div>
+                </div>`;
+            }).join('');
+        }
+
+        function updateStatsUI() {
+            let cats = {}; let total = 0;
+            data.logs.filter(l => l.type === 'exp').forEach(l => { 
+                cats[l.label] = (cats[l.label]||0) + l.amt; 
+                total += l.amt; 
+            });
+            if(myChart) myChart.destroy();
+            Chart.register(ChartDataLabels);
+            myChart = new Chart(document.getElementById('expenseChart'), {
+                type: 'doughnut',
+                data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'] }] },
+                options: { plugins: { legend: { display: false }, datalabels: { color: '#fff', formatter: (v) => ((v/total)*100).toFixed(0)+'%' } } }
+            });
+            document.getElementById('expense-stats-details').innerHTML = Object.entries(cats).map(([label, amt]) => `
+                <div class="stat-detail-item"><span><strong>${label}</strong></span><span>৳ ${amt.toLocaleString()}</span></div>`).join('');
+        }
+
+        function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        function exportPDF() { html2pdf().from(document.getElementById('pdf-content')).save('Bandarban_Report.pdf'); }
+    </script>
+
+    <div id="expense-modal" class="modal">
+        <div class="modal-content">
+            <h3>💸 খরচ যোগ</h3>
+            <input type="text" id="exp-label" placeholder="খাতের নাম">
+            <div id="exp-tags" style="margin-bottom:10px"></div>
+            <input type="number" id="exp-amt" placeholder="পরিমাণ">
+            <button onclick="saveTransaction('exp')" class="btn-large" style="background:var(--glossy-red)">সেভ</button>
+            <button onclick="closeModal()" style="width:100%; border:none; background:none; color:#000; font-weight:bold;">বাতিল</button>
+        </div>
+    </div>
+
+    <div id="deposit-modal" class="modal">
+        <div class="modal-content">
+            <h3>💰 টাকা জমা</h3>
+            <input type="text" id="dep-label" placeholder="নাম">
+            <div id="dep-tags" style="margin-bottom:10px"></div>
+            <input type="number" id="dep-amt" placeholder="পরিমাণ">
+            <button onclick="saveTransaction('dep')" class="btn-large" style="background:var(--glossy-green)">নিশ্চিত</button>
+            <button onclick="closeModal()" style="width:100%; border:none; background:none; color:#000; font-weight:bold;">বাতিল</button>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h3>📝 লেনদেন এডিট</h3>
+            <input type="text" id="edit-label" placeholder="নাম/খাত">
+            <input type="number" id="edit-amt" placeholder="পরিমাণ">
+            <button id="update-btn" class="btn-large" style="background: var(--glossy-green)">আপডেট</button>
+            <button onclick="closeModal()" style="width:100%; border:none; background:none; color:#000; font-weight:bold;">বাতিল</button>
+        </div>
+    </div>
+
+</body>
+</html>
