@@ -252,19 +252,25 @@
 
         /* --- আপডেট করা নেগেটিভ ব্যালেন্স প্রটেকশন ফাংশন --- */
         function saveTransaction(type) {
-            let label = document.getElementById(type + '-label').value.trim();
-            let amt = parseInt(document.getElementById(type + '-amt').value);
-            if(!amt || !label) return;
+    let label = document.getElementById(type + '-label').value.trim();
+    let amt = parseInt(document.getElementById(type + '-amt').value);
+    if(!amt || !label) return;
 
-            // যদি খরচ হয় এবং ব্যালেন্স পর্যাপ্ত না থাকে
-            if (type === 'exp' && amt > data.balance) {
-                alert("আপনার ব্যালেন্স পর্যাপ্ত নয়! (মেইন ব্যালেন্স: ৳" + data.balance + ")");
-                return;
-            }
+    // --- নতুন যোগ করা অংশ ---
+    // যদি খরচ হয় এবং এই খাতটি আগে লিস্টে না থাকে, তবে যোগ হবে
+    if (type === 'exp' && !data.categories.includes(label)) {
+        data.categories.push(label);
+    }
+    // -----------------------
 
-            data.balance += (type === 'dep' ? amt : -amt);
-            data.logs.push({ type, label, amt, date: new Date().toLocaleDateString('bn-BD') });
-            saveAndRefresh(); closeModal();
+    if (type === 'exp' && amt > data.balance) {
+        alert("আপনার ব্যালেন্স পর্যাপ্ত নয়! (মেইন ব্যালেন্স: ৳" + data.balance + ")");
+        return;
+    }
+
+    data.balance += (type === 'dep' ? amt : -amt);
+    data.logs.push({ type, label, amt, date: new Date().toLocaleDateString('bn-BD') });
+    saveAndRefresh(); closeModal();
         }
 
         function deleteLog(idx) { 
@@ -324,6 +330,9 @@
 
         function saveAndRefresh() {
             localStorage.setItem('tourDataV34', JSON.stringify(data));
+            const datalist = document.getElementById('category-list');
+    if(datalist) {
+        datalist.innerHTML = data.categories.map(c => `<option value="${c}">`).join('');
             document.getElementById('main-balance').innerText = data.balance.toLocaleString();
             document.getElementById('total-deposit').innerText = "৳ " + data.logs.filter(l => l.type === 'dep').reduce((s, l) => s + l.amt, 0).toLocaleString();
             document.getElementById('total-expense').innerText = "৳ " + data.logs.filter(l => l.type === 'exp').reduce((s, l) => s + l.amt, 0).toLocaleString();
@@ -366,23 +375,30 @@
             </div>`;
     }).join('');
 }
-        function updateStatsUI() {
-            let cats = {}; let total = 0;
-            data.logs.filter(l => l.type === 'exp').forEach(l => { 
-                cats[l.label] = (cats[l.label]||0) + l.amt; 
-                total += l.amt; 
-            });
-            if(myChart) myChart.destroy();
-            Chart.register(ChartDataLabels);
-            myChart = new Chart(document.getElementById('expenseChart'), {
-                type: 'doughnut',
-                data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'] }] },
-                options: { plugins: { legend: { display: false }, datalabels: { color: '#fff', formatter: (v) => ((v/total)*100).toFixed(0)+'%' } } }
-            });
-            document.getElementById('expense-stats-details').innerHTML = Object.entries(cats).map(([label, amt]) => `
-                <div class="stat-detail-item"><span><strong>${label}</strong></span><span>৳ ${amt.toLocaleString()}</span></div>`).join('');
-        }
+        function saveAndRefresh() {
+            localStorage.setItem('tourDataV34', JSON.stringify(data));
+            
+            // সাজেশন লিস্ট ব্রাউজারে আপডেট করা
+            const datalist = document.getElementById('category-list');
+            if(datalist) {
+                datalist.innerHTML = data.categories.map(c => `<option value="${c}">`).join('');
+            }
 
+            document.getElementById('main-balance').innerText = data.balance.toLocaleString();
+            document.getElementById('total-deposit').innerText = "৳ " + data.logs.filter(l => l.type === 'dep').reduce((s, l) => s + l.amt, 0).toLocaleString();
+            document.getElementById('total-expense').innerText = "৳ " + data.logs.filter(l => l.type === 'exp').reduce((s, l) => s + l.amt, 0).toLocaleString();
+            document.getElementById('history-list').innerHTML = data.logs.slice().reverse().slice(0, 8).map((l, i) => {
+                let actualIdx = data.logs.length - 1 - i;
+                return `<div class="history-item">
+                    <div><small>${l.date}</small><br><strong>${l.label}</strong></div>
+                    <div class="action-icons">
+                        <strong>৳ ${l.amt}</strong>
+                        <i class="fas fa-edit edit-icon" onclick="openEditModal(${actualIdx})"></i>
+                        <i class="fas fa-trash-alt del-icon" onclick="deleteLog(${actualIdx})"></i>
+                    </div>
+                </div>`;
+            }).join('');
+        }
         function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
     </script>
@@ -390,7 +406,8 @@
     <div id="expense-modal" class="modal">
         <div class="modal-content">
             <h3>💸 খরচ যোগ</h3>
-            <input type="text" id="exp-label" placeholder="খাতের নাম">
+            <input type="text" id="exp-label" placeholder="খাতের নাম" list="category-list">
+<datalist id="category-list"></datalist>
             <div id="exp-tags" style="margin-bottom:10px"></div>
             <input type="number" id="exp-amt" placeholder="পরিমাণ">
             <button onclick="saveTransaction('exp')" class="btn-large" style="background:var(--glossy-red)">সেভ</button>
