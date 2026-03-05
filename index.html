@@ -122,6 +122,25 @@
         
         #deadline-box { cursor: pointer; transition: 0.3s; }
         #deadline-input { pointer-events: none; opacity: 0.5; background: #f5f5f5; }
+        /* ফ্রেন্ডস লিস্ট এক স্ক্রিনে দেখানোর জন্য নতুন স্টাইল */
+#friend-deposit-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-top: 10px !important;
+}
+
+.friend-card-mini {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 8px;
+    border-radius: 12px;
+    height: 55px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
     </style>
 <link rel="manifest" href="manifest.json">
 
@@ -175,14 +194,7 @@
                     <small>CREATED BY</small><h1 style="font-size: 32px;">MD. RIZVI</h1>
                 </div>
                 <div style="padding: 20px;">
-                    <div class="glass-box" id="deadline-box" style="padding: 20px; margin-bottom: 20px;" 
-                         onmousedown="startDeadlineTimer()" onmouseup="clearDeadlineTimer()" 
-                         ontouchstart="startDeadlineTimer()" ontouchend="clearDeadlineTimer()">
-                        <h4 style="margin-bottom:10px; display: flex; align-items: center; gap: 10px;">
-                            <i id="deadline-icon" class="fas fa-shield-halved" style="color: #b71c1c;"></i> ডেডলাইন
-                        </h4>
-                        <input type="date" id="deadline-input" onchange="updateDeadline()">
-                    </div>
+                  
                     
                     <button class="btn-large" style="background: #ff9800;" onclick="exportJPG()">🖼️ রিপোর্ট ডাউনলোড (JPG)</button>
                     <center><span onclick="logout()" style="color: #b71c1c; font-weight: 700; cursor: pointer; text-decoration: underline;">লগ আউট</span></center>
@@ -220,30 +232,6 @@
         function logout() { localStorage.removeItem('isLoggedIn_B26'); location.reload(); }
         window.onload = () => { if(localStorage.getItem('isLoggedIn_B26') === 'true') initApp(); };
         function initApp() { document.getElementById('login-overlay').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; saveAndRefresh(); }
-
-        function startDeadlineTimer() {
-            deadlineTimer = setTimeout(() => {
-                let p = prompt("নিরাপত্তা পাসওয়ার্ড দিন:");
-                if(p === "network26") {
-                    document.getElementById('deadline-input').style.pointerEvents = "auto";
-                    document.getElementById('deadline-input').style.opacity = "1";
-                    document.getElementById('deadline-icon').className = "fas fa-shield-heart";
-                    document.getElementById('deadline-icon').style.color = "#2db34a";
-                    alert("ডেডলাইন আনলক হয়েছে।");
-                } else if(p !== null) { alert("ভুল পাসওয়ার্ড!"); }
-            }, 5000);
-        }
-        function clearDeadlineTimer() { clearTimeout(deadlineTimer); }
-
-        function updateDeadline() { 
-            data.deadline = document.getElementById('deadline-input').value; 
-            document.getElementById('deadline-input').style.pointerEvents = "none";
-            document.getElementById('deadline-input').style.opacity = "0.5";
-            document.getElementById('deadline-icon').className = "fas fa-shield-halved";
-            document.getElementById('deadline-icon').style.color = "#b71c1c";
-            saveAndRefresh(); 
-        }
-
         function navigate(tab) {
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             document.getElementById(tab + '-screen').classList.remove('hidden');
@@ -339,8 +327,6 @@
             document.getElementById('main-balance').innerText = data.balance.toLocaleString();
             document.getElementById('total-deposit').innerText = "৳ " + data.logs.filter(l => l.type === 'dep').reduce((s, l) => s + l.amt, 0).toLocaleString();
             document.getElementById('total-expense').innerText = "৳ " + data.logs.filter(l => l.type === 'exp').reduce((s, l) => s + l.amt, 0).toLocaleString();
-            document.getElementById('deadline-input').value = data.deadline;
-            
             document.getElementById('history-list').innerHTML = data.logs.slice().reverse().slice(0, 8).map((l, i) => {
                 let actualIdx = data.logs.length - 1 - i;
                 return `<div class="history-item">
@@ -354,18 +340,32 @@
             }).join('');
         }
 
-        function updateFriendsUI() {
-            let fMap = {}; data.friends.forEach(f => fMap[f] = 0);
-            data.logs.filter(l => l.type === 'dep').forEach(l => fMap[l.label] = (fMap[l.label]||0) + l.amt);
-            document.getElementById('friend-deposit-list').innerHTML = Object.entries(fMap).map(([n, t]) => {
-                const color = getFriendColor(t);
-                return `<div class="friend-card" style="border: 2px solid ${color}; border-left-width: 12px;">
-                    <div><strong>${n}</strong><br><small>${Math.min((t/targetAmount)*100, 100).toFixed(0)}% সম্পন্ন</small></div>
-                    <div style="text-align:right"><strong>৳ ${t}</strong><br><small style="font-size:10px">টার্গেট: ৮০০০</small></div>
-                </div>`;
-            }).join('');
-        }
-
+  function updateFriendsUI() {
+    let fMap = {}; 
+    data.friends.forEach(f => fMap[f] = 0);
+    // জমার ডাটা ফিল্টার এবং ম্যাপ করা
+    data.logs.filter(l => l.type === 'dep').forEach(l => fMap[l.label] = (fMap[l.label]||0) + l.amt);
+    
+    document.getElementById('friend-deposit-list').innerHTML = Object.entries(fMap).map(([n, t]) => {
+        const color = getFriendColor(t);
+        // পারসেন্টেজ ক্যালকুলেশন (টার্গেট ৮০০০ এর ওপর ভিত্তি করে)
+        const percent = Math.min((t/targetAmount)*100, 100).toFixed(0);
+        
+        return `
+            <div class="friend-card-mini" style="border-left: 4px solid ${color};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                    <strong style="font-size: 12px; color: #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55px;">${n}</strong>
+                    <span style="font-size: 11px; font-weight: 700; color: #333;">৳${t}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <div style="flex-grow: 1; background: rgba(0,0,0,0.08); height: 4px; border-radius: 2px;">
+                        <div style="width: ${percent}%; background: ${color}; height: 100%; border-radius: 2px;"></div>
+                    </div>
+                    <span style="font-size: 9px; font-weight: 800; color: ${color}; min-width: 22px;">${percent}%</span>
+                </div>
+            </div>`;
+    }).join('');
+}
         function updateStatsUI() {
             let cats = {}; let total = 0;
             data.logs.filter(l => l.type === 'exp').forEach(l => { 
@@ -384,110 +384,7 @@
         }
 
         function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-function exportJPG() {
-    // ১. নির্দিষ্ট 540x1200 px এর কন্টেইনার তৈরি এবং স্কেলিং ফিক্স
-    const reportContainer = document.createElement('div');
-    
-    // CSS রিসেট এবং কন্টেইনার স্টাইল
-    reportContainer.style.cssText = `
-        width: 540px;
-        height: 1200px;
-        overflow: hidden;
-        background: #ffffff;
-        color: #000000;
-        font-family: 'Hind Siliguri', sans-serif;
-        display: flex;
-        flex-direction: column;
-        padding: 0;
-        margin: 0;
-        box-sizing: border-box;
-        position: absolute;
-        left: -10000px; /* স্ক্রিনের বাইরে রাখা */
-        top: 0;
-    `;
 
-    // ডাটা ক্যালকুলেশন
-    const expenseLogs = data.logs.filter(l => l.type === 'exp');
-    const totalExp = expenseLogs.reduce((s, l) => s + l.amt, 0);
-    const totalDep = data.logs.filter(l => l.type === 'dep').reduce((s, l) => s + l.amt, 0);
-
-    // ২. হেডার এবং সামারি সেকশন (সাইজ কমিয়ে আনা হয়েছে)
-    let htmlContent = `
-        <div style="background: #e8f5e9; padding: 15px; border-bottom: 3px solid #004d40; text-align:center;">
-            <h1 style="margin: 0 0 5px 0; color: #004d40; font-size: 28px; font-weight: 700;">Bandarban 26</h1>
-            <p style="margin: 0; font-size: 14px; font-weight: 600;">ট্যুর খরচ রিপোর্ট (পূর্ণাঙ্গ)</p>
-            <small style="color: #666; font-size: 11px;">তারিখ: ${new Date().toLocaleDateString('bn-BD')}</small>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; padding: 10px 20px; background: #fdfdfd; border-bottom: 1px solid #eee; font-size: 13px;">
-            <div style="text-align:center;">
-                <span style="color:#666;">মোট জমা</span><br>
-                <strong style="font-size:16px;">৳ ${totalDep.toLocaleString()}</strong>
-            </div>
-            <div style="text-align:center; border-left: 1px solid #eee; border-right: 1px solid #eee; padding: 0 15px;">
-                <span style="color:#b71c1c;">মোট খরচ</span><br>
-                <strong style="font-size:16px; color:#b71c1c;">-৳ ${totalExp.toLocaleString()}</strong>
-            </div>
-            <div style="text-align:center;">
-                <span style="color:#004d40;">অবশিষ্ট ব্যালেন্স</span><br>
-                <strong style="font-size:18px; color:#004d40;">৳ ${data.balance.toLocaleString()}</strong>
-            </div>
-        </div>
-
-        <div style="flex-grow: 1; overflow-y: hidden; padding: 5px;">
-            <h4 style="margin: 5px 10px; border-left: 4px solid #b71c1c; padding-left: 8px; font-size: 14px;">💸 খরচের বিবরণী</h4>
-            <table style="width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 11px;">
-                <thead>
-                    <tr style="background: #004d40; color: #fff;">
-                        <th style="padding: 6px; border: 1px solid #ddd; text-align: left; width: 70%;">বিবরণ ও তারিখ</th>
-                        <th style="padding: 6px; border: 1px solid #ddd; text-align: right; width: 30%;">টাকা</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    // প্রতিটি খরচ যোগ করা (রো উচ্চতা কম)
-    expenseLogs.forEach(log => {
-        htmlContent += `
-            <tr style="height: 30px;">
-                <td style="padding: 4px 6px; border: 1px solid #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    <div style="font-weight: 600;">${log.label}</div>
-                    <small style="color: #777; font-size: 9px;">${log.date}</small>
-                </td>
-                <td style="padding: 4px 6px; border: 1px solid #ddd; text-align: right; font-weight: 600; font-size: 12px;">৳ ${log.amt.toLocaleString()}</td>
-            </tr>
-        `;
-    });
-
-    // ফুগার সেকশন (একদম নিচে থাকবে)
-    htmlContent += `
-                </tbody>
-            </table>
-        </div>
-        <div style="margin-top: auto; padding: 10px; text-align: center; border-top: 1px dashed #ccc; font-size: 10px; color: #999;">
-            "নেক্সট ট্যুর এর জন্য আরও আপডেটেড এবং উন্নত অ্যাপ থাকবে।" - md. rizvi
-        </div>
-    `;
-
-    reportContainer.innerHTML = htmlContent;
-    document.body.appendChild(reportContainer);
-
-    // ৩. html2canvas দিয়ে ছবি ক্যাপচার (Scale: 1 ব্যবহার করে সাইজ ফিক্স রাখা)
-    html2canvas(reportContainer, {
-        width: 540,
-        height: 1200,
-        scale: 1, // স্কেল ১ রাখলে ৫৪০x১২০০ পিক্সেলই হবে
-        useCORS: true,
-        backgroundColor: '#ffffff'
-    }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `Bandarban_Report_Final_${new Date().getTime()}.jpg`;
-        link.href = canvas.toDataURL('image/jpeg', 0.95);
-        link.click();
-        
-        document.body.removeChild(reportContainer);
-    });
-}
     </script>
 
     <div id="expense-modal" class="modal">
@@ -529,6 +426,100 @@ function exportJPG() {
         .catch(err => console.log('Service Worker Failed', err));
     });
   }
+  function exportJPG() {
+    const reportContainer = document.createElement('div');
+    
+    // অ্যাপের থিমের মতো ব্যাকগ্রাউন্ড এবং স্টাইল সেট করা
+    reportContainer.style.cssText = `
+        width: 540px;
+        height: 1200px;
+        padding: 30px;
+        font-family: 'Hind Siliguri', sans-serif;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        position: absolute;
+        left: -10000px;
+        top: 0;
+        background: url('https://cdn.pixabay.com/photo/2019/02/08/11/44/landscape-3983105_1280.jpg');
+        background-size: cover;
+        background-position: center;
+    `;
+
+    const expenseLogs = data.logs.filter(l => l.type === 'exp');
+    const totalExp = expenseLogs.reduce((s, l) => s + l.amt, 0);
+    const totalDep = data.logs.filter(l => l.type === 'dep').reduce((s, l) => s + l.amt, 0);
+
+    // গ্লসি ইফেক্ট দেওয়ার জন্য একটি ওভারলে ডিভ
+    let htmlContent = `
+        <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 30px; height: 100%; display: flex; flex-direction: column; padding: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+            
+            <div style="text-align:center; margin-bottom: 25px;">
+                <h1 style="margin: 0; color: #000; font-size: 35px; font-weight: 800; text-shadow: 0 2px 4px rgba(255,255,255,0.5);">Bandarban 26</h1>
+                <div style="background: rgba(0,0,0,0.05); display: inline-block; padding: 4px 15px; border-radius: 10px; margin-top: 5px;">
+                    <span style="font-size: 14px; font-weight: 700;">ট্যুর খরচ রিপোর্ট (Ultimate)</span>
+                </div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255, 255, 255, 0.5); padding: 20px; border-radius: 20px; margin-bottom: 25px; backdrop-filter: blur(5px);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span style="font-weight:600;">মোট জমা:</span> <strong>৳ ${totalDep.toLocaleString()}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; color:#b71c1c;">
+                    <span style="font-weight:600;">মোট খরচ:</span> <strong>- ৳ ${totalExp.toLocaleString()}</strong>
+                </div>
+                <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 10px 0;"></div>
+                <div style="display:flex; justify-content:space-between; font-size:22px; color:#000; font-weight: 900;">
+                    <span>ব্যালেন্স:</span> <strong>৳ ${data.balance.toLocaleString()}</strong>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom:15px; font-size: 18px; color: #000;">💸 খরচের বিবরণী:</h3>
+            <div style="flex-grow: 1;">
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
+    `;
+
+    expenseLogs.forEach(log => {
+        htmlContent += `
+            <tr>
+                <td style="background: rgba(255, 255, 255, 0.3); padding: 12px; border-radius: 15px 0 0 15px; border: 1px solid rgba(255,255,255,0.3); border-right: none;">
+                    <strong style="font-size: 14px;">${log.label}</strong><br>
+                    <small style="color: #444; font-size: 10px;">${log.date}</small>
+                </td>
+                <td style="background: rgba(255, 255, 255, 0.3); padding: 12px; border-radius: 0 15px 15px 0; border: 1px solid rgba(255,255,255,0.3); border-left: none; text-align: right; font-weight: 800; font-size: 15px;">
+                    ৳ ${log.amt.toLocaleString()}
+                </td>
+            </tr>
+        `;
+    });
+
+    htmlContent += `
+                </table>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; font-size: 12px; opacity: 0.8;">
+                <p>তারিখ: ${new Date().toLocaleDateString('bn-BD')}</p>
+                <p style="font-weight: 700; margin-top: 5px;">Created by MD. RIZVI</p>
+            </div>
+        </div>
+    `;
+
+    reportContainer.innerHTML = htmlContent;
+    document.body.appendChild(reportContainer);
+
+    html2canvas(reportContainer, {
+        width: 540,
+        height: 1200,
+        scale: 2,
+        useCORS: true
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Bandarban_Glossy_Report.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.9);
+        link.click();
+        document.body.removeChild(reportContainer);
+    });
+}
 </script>
 </body>
 </html>
