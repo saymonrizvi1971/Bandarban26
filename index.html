@@ -384,7 +384,21 @@
         }
 
         function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-        function exportPDF() { html2pdf().from(document.getElementById('pdf-content')).save('Bandarban_Report.pdf'); }
+        function exportJPG() {
+    const element = document.getElementById('pdf-content');
+    
+    // স্ক্রিনশট নেওয়ার সময় ব্যাকগ্রাউন্ড বা নির্দিষ্ট অংশ সুন্দর দেখানোর জন্য অপশন
+    html2canvas(element, {
+        useCORS: true,
+        scale: 2, // ইমেজের কোয়ালিটি ভালো করার জন্য
+        backgroundColor: "#f0f0f0" // ইমেজের পেছনের রঙ
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'Bandarban_Report.jpg';
+        link.href = canvas.toDataURL('image/jpeg', 0.9); // 0.9 মানে ৯০% কোয়ালিটি
+        link.click();
+    });
+        }
     </script>
 
     <div id="expense-modal" class="modal">
