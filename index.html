@@ -385,67 +385,107 @@
 
         function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 function exportJPG() {
-    // ১. একটি অদৃশ্য ডিভ তৈরি করা যেখানে ডাটা সাজানো হবে
+    // ১. নির্দিষ্ট 540x1200 px এর কন্টেইনার তৈরি এবং স্কেলিং ফিক্স
     const reportContainer = document.createElement('div');
-    reportContainer.style.width = '500px';
-    reportContainer.style.padding = '30px';
-    reportContainer.style.background = '#fff';
-    reportContainer.style.color = '#000';
-    reportContainer.style.fontFamily = "'Hind Siliguri', sans-serif";
-
-    // ২. খরচের ডাটা ফিল্টার করা
-    const expenseLogs = data.logs.filter(l => l.type === 'exp');
-    const totalExp = expenseLogs.reduce((s, l) => s + l.amt, 0);
-
-    // ৩. রিপোর্টের কন্টেন্ট (হেডার ও সামারি)
-    let htmlContent = `
-        <div style="text-align:center; border-bottom: 2px solid #333; padding-bottom:10px; margin-bottom:20px;">
-            <h1 style="margin:0;">Bandarban 26 Report</h1>
-            <p style="margin:5px 0;">তারিখ: ${new Date().toLocaleDateString('bn-BD')}</p>
-        </div>
-        <div style="margin-bottom:20px; background:#f9f9f9; padding:15px; border-radius:10px;">
-            <p><strong>মোট জমা:</strong> ৳ ${data.logs.filter(l => l.type === 'dep').reduce((s, l) => s + l.amt, 0)}</p>
-            <p style="color:#b71c1c;"><strong>মোট খরচ:</strong> ৳ ${totalExp}</p>
-            <p style="font-size:18px; border-top:1px solid #ddd; padding-top:10px;"><strong>বর্তমান ব্যালেন্স:</strong> ৳ ${data.balance}</p>
-        </div>
-        <h3 style="background:#eee; padding:10px;">💸 খরচের বিবরণী:</h3>
-        <table style="width:100%; border-collapse: collapse; margin-top:10px;">
-            <thead>
-                <tr style="background:#444; color:#fff;">
-                    <th style="padding:10px; border:1px solid #ddd; text-align:left;">খাত</th>
-                    <th style="padding:10px; border:1px solid #ddd; text-align:right;">পরিমাণ</th>
-                </tr>
-            </thead>
-            <tbody>
+    
+    // CSS রিসেট এবং কন্টেইনার স্টাইল
+    reportContainer.style.cssText = `
+        width: 540px;
+        height: 1200px;
+        overflow: hidden;
+        background: #ffffff;
+        color: #000000;
+        font-family: 'Hind Siliguri', sans-serif;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+        position: absolute;
+        left: -10000px; /* স্ক্রিনের বাইরে রাখা */
+        top: 0;
     `;
 
-    // ৪. প্রতিটি খরচের এন্ট্রি যোগ করা
+    // ডাটা ক্যালকুলেশন
+    const expenseLogs = data.logs.filter(l => l.type === 'exp');
+    const totalExp = expenseLogs.reduce((s, l) => s + l.amt, 0);
+    const totalDep = data.logs.filter(l => l.type === 'dep').reduce((s, l) => s + l.amt, 0);
+
+    // ২. হেডার এবং সামারি সেকশন (সাইজ কমিয়ে আনা হয়েছে)
+    let htmlContent = `
+        <div style="background: #e8f5e9; padding: 15px; border-bottom: 3px solid #004d40; text-align:center;">
+            <h1 style="margin: 0 0 5px 0; color: #004d40; font-size: 28px; font-weight: 700;">Bandarban 26</h1>
+            <p style="margin: 0; font-size: 14px; font-weight: 600;">ট্যুর খরচ রিপোর্ট (পূর্ণাঙ্গ)</p>
+            <small style="color: #666; font-size: 11px;">তারিখ: ${new Date().toLocaleDateString('bn-BD')}</small>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; padding: 10px 20px; background: #fdfdfd; border-bottom: 1px solid #eee; font-size: 13px;">
+            <div style="text-align:center;">
+                <span style="color:#666;">মোট জমা</span><br>
+                <strong style="font-size:16px;">৳ ${totalDep.toLocaleString()}</strong>
+            </div>
+            <div style="text-align:center; border-left: 1px solid #eee; border-right: 1px solid #eee; padding: 0 15px;">
+                <span style="color:#b71c1c;">মোট খরচ</span><br>
+                <strong style="font-size:16px; color:#b71c1c;">-৳ ${totalExp.toLocaleString()}</strong>
+            </div>
+            <div style="text-align:center;">
+                <span style="color:#004d40;">অবশিষ্ট ব্যালেন্স</span><br>
+                <strong style="font-size:18px; color:#004d40;">৳ ${data.balance.toLocaleString()}</strong>
+            </div>
+        </div>
+
+        <div style="flex-grow: 1; overflow-y: hidden; padding: 5px;">
+            <h4 style="margin: 5px 10px; border-left: 4px solid #b71c1c; padding-left: 8px; font-size: 14px;">💸 খরচের বিবরণী</h4>
+            <table style="width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 11px;">
+                <thead>
+                    <tr style="background: #004d40; color: #fff;">
+                        <th style="padding: 6px; border: 1px solid #ddd; text-align: left; width: 70%;">বিবরণ ও তারিখ</th>
+                        <th style="padding: 6px; border: 1px solid #ddd; text-align: right; width: 30%;">টাকা</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    // প্রতিটি খরচ যোগ করা (রো উচ্চতা কম)
     expenseLogs.forEach(log => {
         htmlContent += `
-            <tr>
-                <td style="padding:10px; border:1px solid #ddd;">${log.label} <br><small style="color:#666;">${log.date}</small></td>
-                <td style="padding:10px; border:1px solid #ddd; text-align:right;">৳ ${log.amt}</td>
+            <tr style="height: 30px;">
+                <td style="padding: 4px 6px; border: 1px solid #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <div style="font-weight: 600;">${log.label}</div>
+                    <small style="color: #777; font-size: 9px;">${log.date}</small>
+                </td>
+                <td style="padding: 4px 6px; border: 1px solid #ddd; text-align: right; font-weight: 600; font-size: 12px;">৳ ${log.amt.toLocaleString()}</td>
             </tr>
         `;
     });
 
-    htmlContent += `</tbody></table>
-        <div style="margin-top:30px; text-align:center; font-size:12px; color:#888;">
-            Generated by Bandarban 26 App - Created by MD. RIZVI
+    // ফুগার সেকশন (একদম নিচে থাকবে)
+    htmlContent += `
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top: auto; padding: 10px; text-align: center; border-top: 1px dashed #ccc; font-size: 10px; color: #999;">
+            "নেক্সট ট্যুর এর জন্য আরও আপডেটেড এবং উন্নত অ্যাপ থাকবে।" - md. rizvi
         </div>
     `;
 
     reportContainer.innerHTML = htmlContent;
-    document.body.appendChild(reportContainer); // সাময়িকভাবে বডিতে যোগ করা
+    document.body.appendChild(reportContainer);
 
-    // ৫. html2canvas দিয়ে ছবি তোলা
-    html2canvas(reportContainer, { scale: 2 }).then(canvas => {
+    // ৩. html2canvas দিয়ে ছবি ক্যাপচার (Scale: 1 ব্যবহার করে সাইজ ফিক্স রাখা)
+    html2canvas(reportContainer, {
+        width: 540,
+        height: 1200,
+        scale: 1, // স্কেল ১ রাখলে ৫৪০x১২০০ পিক্সেলই হবে
+        useCORS: true,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `Tour_Report_${new Date().getTime()}.jpg`;
-        link.href = canvas.toDataURL('image/jpeg', 0.9);
+        link.download = `Bandarban_Report_Final_${new Date().getTime()}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
         link.click();
         
-        document.body.removeChild(reportContainer); // কাজ শেষে মুছে ফেলা
+        document.body.removeChild(reportContainer);
     });
 }
     </script>
